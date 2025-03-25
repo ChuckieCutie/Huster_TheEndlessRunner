@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Endless Runner</title>
+    <style> 
+        body { margin: 0; overflow: hidden; } 
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+    <script>
+        // Khởi tạo scene, camera, renderer
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Tạo mặt đất
+        const groundGeometry = new THREE.BoxGeometry(10, 1, 200);
+        const groundMaterial = new THREE.MeshBasicMaterial({ color: 0x654321 });
+        const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+        ground.position.y = -1;
+        scene.add(ground);
+
+        // Tạo nhân vật
+        const playerGeometry = new THREE.BoxGeometry(1, 1, 1);
+        const playerMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+        const player = new THREE.Mesh(playerGeometry, playerMaterial);
+        player.position.y = 0;
+        scene.add(player);
+
+        // Tạo chướng ngại vật
+        const obstacles = [];
+        function createObstacle() {
+            const obstacleGeometry = new THREE.BoxGeometry(1, 1, 1);
+            const obstacleMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+            const obstacle = new THREE.Mesh(obstacleGeometry, obstacleMaterial);
+            obstacle.position.set(Math.random() * 4 - 2, 0, -50);
+            scene.add(obstacle);
+            obstacles.push(obstacle);
+        }
+        setInterval(createObstacle, 2000);
+
+        // Biến điều khiển
+        let speed = 0.1;
+        let velocityY = 0;
+        let gravity = -0.01;
+        let isJumping = false;
+        let playerSpeedX = 0; // Tốc độ di chuyển trái/phải
+
+        // Xử lý nhập phím
+        window.addEventListener('keydown', (event) => {
+            if (event.code === 'ArrowUp' && !isJumping) {
+                velocityY = 0.2;
+                isJumping = true;
+            } else if (event.code === 'ArrowLeft') {
+                playerSpeedX = -0.1; // Di chuyển trái
+            } else if (event.code === 'ArrowRight') {
+                playerSpeedX = 0.1; // Di chuyển phải
+            }
+        });
+
+        window.addEventListener('keyup', (event) => {
+            if (event.code === 'ArrowLeft' || event.code === 'ArrowRight') {
+                playerSpeedX = 0; // Dừng di chuyển ngang
+            }
+        });
+
+        // Game loop
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Di chuyển đường chạy
+            ground.position.z += speed;
+            if (ground.position.z > 10) {
+                ground.position.z = 0;
+            }
+
+            // Di chuyển nhân vật
+            player.position.y += velocityY;
+            velocityY += gravity;
+
+            if (player.position.y <= 0) {
+                player.position.y = 0;
+                isJumping = false;
+            }
+
+            // Di chuyển trái/phải
+            player.position.x += playerSpeedX;
+            player.position.x = Math.max(-4, Math.min(4, player.position.x)); // Giới hạn di chuyển
+
+            // Di chuyển chướng ngại vật
+            obstacles.forEach((obstacle, index) => {
+                obstacle.position.z += speed;
+                if (obstacle.position.z > 5) {
+                    scene.remove(obstacle);
+                    obstacles.splice(index, 1);
+                }
+
+                // Kiểm tra va chạm
+                if (player.position.distanceTo(obstacle.position) < 1) {
+                    alert('Game Over!');
+                    location.reload();
+                }
+            });
+
+            renderer.render(scene, camera);
+        }
+
+        camera.position.set(0, 2, 5);
+        animate();
+    </script>
+</body>
+</html>
